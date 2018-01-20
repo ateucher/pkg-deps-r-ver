@@ -97,7 +97,7 @@ ui <- fluidPage(
       dataTableOutput("pkgdeps", width = "95%"),
       hr(),
       p("This table lists the packages listed as dependencies by the selected package, 
-        their current version on CRAN, and the <em>minimum version of R</em> required by 
+        their current version on CRAN, and the minimum version of R required by 
         each of those dependencies."), 
       p("This is meant to help you choose a reasonable minimum version of R and other 
         dependencies for your package. Unless you have a good reason to, your package 
