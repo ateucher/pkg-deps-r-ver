@@ -4,6 +4,7 @@ library(dplyr)
 library(tidyr)
 library(desc)
 library(DT)
+library(httr)
 
 get_dep_r_versions <- function(desc = NULL, dep_types = c("Depends", "Imports", "Suggests", "Enhances")) {
   dep_types <- match.arg(dep_types, several.ok = TRUE)
@@ -22,8 +23,7 @@ get_dep_r_versions <- function(desc = NULL, dep_types = c("Depends", "Imports", 
 get_deps <- function(desc, dep_types = c("Depends", "Imports", "Suggests", "Enhances")) {
   dep_types <- match.arg(dep_types, several.ok = TRUE)
   desc::desc_get_deps(desc) %>% 
-    filter(type %in% dep_types, 
-           !package %in% c(getOption("defaultPackages"), "R")) %>% 
+    filter(type %in% dep_types, package != "R") %>% 
     select(-version)
 }
 
@@ -36,10 +36,8 @@ get_desc_file <- function(pkg) {
     desc_file <- tempfile()
     url <- paste0("https://raw.githubusercontent.com/cran/", 
                   pkg, "/master/DESCRIPTION")
-    res <- tryCatch(suppressWarnings(
-      download.file(url, destfile = desc_file, quiet = TRUE)), 
-      error = function(e) NULL) # warning("Unable to get DESCRIPTION file for ", pkg))
-    if (res > 0) return(NULL)
+    res <- GET(url, write_disk(desc_file, overwrite = TRUE))
+    if (res$status_code > 200) return(NULL)
   }
   desc_file
 }
@@ -78,10 +76,9 @@ ui <- fluidPage(
     sidebarPanel(
       textInput("pkg","Choose a package on CRAN", 
                 placeholder = "Name of package"),
-      actionButton("checkPkg", "Check pkg"),
-      br(),
-      p("Or upload a"),
-      fileInput("descFile", "DESCRIPTION file"), 
+      actionButton("checkPkg", "Check Package"),
+      br(),br(),
+      fileInput("descFile", "Or upload a DESCRIPTION file"), 
       actionButton("checkFile", "Check DESCRIPTION file"),
       checkboxGroupInput("depTypes", "Dependency Types", 
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
