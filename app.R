@@ -16,7 +16,7 @@ get_dep_r_versions <- function(desc = NULL, dep_types = c("Depends", "Imports", 
   
   map_dfr(deps$package, pkg_rver) %>%
     left_join(deps, by = "package") %>%
-    select(package, type, r_version, everything()) %>%
+    select(package, cran_ver, type, r_version, everything()) %>%
     arrange(desc(r_major), desc(r_minor), desc(r_patch))
 }
 
@@ -28,9 +28,9 @@ get_deps <- function(desc, dep_types = c("Depends", "Imports", "Suggests", "Enha
 }
 
 get_desc_file <- function(pkg) {
-  desc_file <- system.file("DESCRIPTION", package = pkg)
-  
-  if (!file.exists(desc_file)) {
+  # desc_file <- system.file("DESCRIPTION", package = pkg)
+  # 
+  # if (!file.exists(desc_file)) {
     # message("No DESCRIPTION file locally for ", pkg,
     #         ".\n Attempting to get from https://github.com/cran/", pkg)
     desc_file <- tempfile()
@@ -38,7 +38,7 @@ get_desc_file <- function(pkg) {
                   pkg, "/master/DESCRIPTION")
     res <- GET(url, write_disk(desc_file, overwrite = TRUE))
     if (res$status_code > 200) return(NULL)
-  }
+  # }
   desc_file
 }
 
@@ -52,6 +52,8 @@ pkg_rver <- function(pkg) {
   desc_file <- get_desc_file(pkg)
   if (is.null(desc_file)) return(NULL)
   
+  pkg_ver <- desc::desc_get("Version", desc_file)
+  
   deps <- desc::desc_get_deps(desc_file)
   if (is.null(deps)) {
     R_ver_txt <- character(0)
@@ -64,13 +66,13 @@ pkg_rver <- function(pkg) {
   }  else {
     R_ver <- parse_rver(R_ver_txt)
   }
-  list(package = pkg, r_version = R_ver_txt, 
+  list(package = pkg, cran_ver = pkg_ver, r_version = R_ver_txt, 
        r_major = R_ver[1], r_minor = R_ver[2], r_patch = R_ver[3])
 }
 
 ui <- fluidPage(
   
-  titlePanel("Find the R version specified in the dependencies of a package"),
+  titlePanel("Find an appropriate version of dependencies for your package"),
   
   sidebarLayout(
     sidebarPanel(
@@ -85,7 +87,7 @@ ui <- fluidPage(
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
                          selected = c("Depends", "Imports", "Suggests")),
       hr(),
-      p("Source code for this app can be found", 
+      p("Source code for this app is", 
         a(href = "https://github.com/ateucher/pkg-deps-r-ver", "here."))
       
     ),
@@ -93,7 +95,12 @@ ui <- fluidPage(
     mainPanel(
       h3(htmlOutput("pkgname")),
       dataTableOutput("pkgdeps", width = "95%"),
-      p("*Note that only dependencies on CRAN are checked")
+      hr(),
+      p("This table lists the current version (on CRAN) of packages listed as dependencies
+        of the selected package, and the minimum version of R required by each of 
+        those dependencies. *Note that only dependencies on CRAN are checked"), 
+      p("This is meant to help you choose a reasonable minimum version of R and other 
+        dependencies of your package.")
     )
   )
 )
@@ -117,14 +124,16 @@ server <- function(input, output, session) {
   output$pkgname <- renderText({
     req(rv$desc)
     pkg <- desc_get("Package", rv$desc)
-    paste0("R versions in <em>", pkg, "</em> dependencies*")
+    pkg_ver <- desc_get("Version", rv$desc)
+    paste0("Dependencies for <em>", pkg, " v", pkg_ver, "</em>, and minimum R version specied by those dependencies")
   })
   
   output$pkgdeps <- renderDataTable({
     req(rv$desc)
     get_dep_r_versions(desc = rv$desc,
                        dep_types = input$depTypes)
-  })
+  }, colnames = c("Package", "Version on CRAN", "Dependency Type", "R Version", 
+                  "R Major", "R Minor", "R Patch"))
 }
 
 # Run the application 
