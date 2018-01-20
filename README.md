@@ -1,4 +1,4 @@
-# Check the R versions in your packages dependencies
+# Check the R versions in your package's dependencies
 
 A Shiny App that inspects the `DESCRIPTION` file of a package,
 finds all of the dependencies, and lists the R version required (Depended on)
