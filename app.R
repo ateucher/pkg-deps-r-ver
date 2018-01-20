@@ -77,13 +77,16 @@ ui <- fluidPage(
       textInput("pkg","Choose a package on CRAN", 
                 placeholder = "Name of package"),
       actionButton("checkPkg", "Check Package"),
-      br(),br(),
+      hr(),
       fileInput("descFile", "Or upload a DESCRIPTION file"), 
-      actionButton("checkFile", "Check DESCRIPTION file"),
-      br(),br(),
-      checkboxGroupInput("depTypes", "Dependency Types", 
+      hr(),
+      checkboxGroupInput("depTypes", "Select dependency types:", 
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
-                         selected = c("Depends", "Imports", "Suggests"))
+                         selected = c("Depends", "Imports", "Suggests")),
+      hr(),
+      p("Source code for this app can be found", 
+        a(href = "https://github.com/ateucher/pkg-deps-r-ver", "here."))
+      
     ),
     
     mainPanel(
@@ -124,4 +127,3 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
