@@ -92,7 +92,8 @@ ui <- fluidPage(
     
     mainPanel(
       h2(htmlOutput("pkgname")),
-      dataTableOutput("pkgdeps", width = "95%")
+      dataTableOutput("pkgdeps", width = "95%"),
+      p("*Note that only dependencies on CRAN are checked")
     )
   )
 )
@@ -116,7 +117,7 @@ server <- function(input, output, session) {
   output$pkgname <- renderText({
     req(rv$desc)
     pkg <- desc_get("Package", rv$desc)
-    paste0("R versions in <em>", pkg, "</em> dependencies")
+    paste0("R versions in <em>", pkg, "</em> dependencies*")
   })
   
   output$pkgdeps <- renderDataTable({
