@@ -29,10 +29,10 @@ get_deps <- function(desc, dep_types = c("Depends", "Imports", "Suggests", "Enha
 
 get_desc_file <- function(pkg) {
   desc_file <- system.file("DESCRIPTION", package = pkg)
-  
+
   if (!file.exists(desc_file)) {
-    # message("No DESCRIPTION file locally for ", pkg, 
-    #         ".\n Attempting to get from https://github.com/cran/", pkg)
+  # message("No DESCRIPTION file locally for ", pkg,
+  #         ".\n Attempting to get from https://github.com/cran/", pkg)
     desc_file <- tempfile()
     url <- paste0("https://raw.githubusercontent.com/cran/", 
                   pkg, "/master/DESCRIPTION")
@@ -78,32 +78,48 @@ ui <- fluidPage(
     sidebarPanel(
       textInput("pkg","Choose a package on CRAN", 
                 placeholder = "Name of package"),
+      actionButton("checkPkg", "Check pkg"),
+      br(),
       p("Or upload a"),
       fileInput("descFile", "DESCRIPTION file", accept = "text/plain"), 
+      actionButton("checkFile", "Check DESCRIPTION file"),
       checkboxGroupInput("depTypes", "Dependency Types", 
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
                          selected = c("Depends", "Imports", "Suggests"))
     ),
     
     mainPanel(
+      h2(htmlOutput("pkgname")),
       dataTableOutput("pkgdeps")
     )
   )
 )
 
 server <- function(input, output, session) {
-  output$pkgdeps <- renderDataTable({
+  rv <- reactiveValues(desc = NULL)
+  
+  observeEvent(input$checkPkg, {
+    req(input$pkg)
+    rv$desc <- get_desc_file(input$pkg)
+  })
+  
+  observeEvent(input$checkFile, {
     desc_file <- input$descFile
-    if (is.null(desc_file)) {
-      req(input$pkg)
-      desc <- get_desc_file(input$pkg)
-    } else {
-      if (desc_file$name != "DESCRIPTION") 
-        stop("File must be called DESCRIPTION")
-      desc <- desc_file$datapath
-      updateTextInput(session, inputId = "pkg", value = "")
-    }
-    get_dep_r_versions(desc = desc,
+    if (desc_file$name != "DESCRIPTION")
+      stop("File must be called DESCRIPTION")
+    rv$desc <- desc_file$datapath
+    updateTextInput(session, inputId = "pkg", value = "")
+  })
+  
+  output$pkgname <- renderText({
+    req(rv$desc)
+    pkg <- desc_get("Package", rv$desc)
+    paste0("R versions in <em>", pkg, "</em> dependencies")
+  })
+  
+  output$pkgdeps <- renderDataTable({
+    req(rv$desc)
+    get_dep_r_versions(desc = rv$desc,
                        dep_types = input$depTypes)
   })
 }
