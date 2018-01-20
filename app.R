@@ -91,7 +91,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      h2(htmlOutput("pkgname")),
+      h3(htmlOutput("pkgname")),
       dataTableOutput("pkgdeps", width = "95%"),
       p("*Note that only dependencies on CRAN are checked")
     )
