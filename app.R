@@ -88,7 +88,7 @@ ui <- fluidPage(
     
     mainPanel(
       h2(htmlOutput("pkgname")),
-      dataTableOutput("pkgdeps")
+      dataTableOutput("pkgdeps", width = "95%")
     )
   )
 )
