@@ -96,11 +96,14 @@ ui <- fluidPage(
       h3(htmlOutput("pkgname")),
       dataTableOutput("pkgdeps", width = "95%"),
       hr(),
-      p("This table lists the current version (on CRAN) of packages listed as dependencies
-        of the selected package, and the minimum version of R required by each of 
-        those dependencies. *Note that only dependencies on CRAN are checked"), 
+      p("This table lists the packages listed as dependencies by the selected package, 
+        their current version on CRAN, and the <em>minimum version of R</em> required by 
+        each of those dependencies."), 
       p("This is meant to help you choose a reasonable minimum version of R and other 
-        dependencies of your package.")
+        dependencies for your package. Unless you have a good reason to, your package 
+        shouldn't depend on a version of R higher than the highest version required 
+        by your package's dependencies (i.e., the highest R version in this table)."),
+      p("*Note that only dependencies on CRAN are checked")
     )
   )
 )
@@ -125,7 +128,7 @@ server <- function(input, output, session) {
     req(rv$desc)
     pkg <- desc_get("Package", rv$desc)
     pkg_ver <- desc_get("Version", rv$desc)
-    paste0("Dependencies for <em>", pkg, " v", pkg_ver, "</em>, and minimum R version specied by those dependencies")
+    paste0("Dependencies* for <em>", pkg, " v", pkg_ver, "</em>, and minimum R version specied by those dependencies")
   })
   
   output$pkgdeps <- renderDataTable({
