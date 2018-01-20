@@ -81,7 +81,7 @@ ui <- fluidPage(
       actionButton("checkPkg", "Check pkg"),
       br(),
       p("Or upload a"),
-      fileInput("descFile", "DESCRIPTION file", accept = "text/plain"), 
+      fileInput("descFile", "DESCRIPTION file"), 
       actionButton("checkFile", "Check DESCRIPTION file"),
       checkboxGroupInput("depTypes", "Dependency Types", 
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
