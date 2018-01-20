@@ -29,10 +29,10 @@ get_deps <- function(desc, dep_types = c("Depends", "Imports", "Suggests", "Enha
 
 get_desc_file <- function(pkg) {
   desc_file <- system.file("DESCRIPTION", package = pkg)
-
+  
   if (!file.exists(desc_file)) {
-  # message("No DESCRIPTION file locally for ", pkg,
-  #         ".\n Attempting to get from https://github.com/cran/", pkg)
+    # message("No DESCRIPTION file locally for ", pkg,
+    #         ".\n Attempting to get from https://github.com/cran/", pkg)
     desc_file <- tempfile()
     url <- paste0("https://raw.githubusercontent.com/cran/", 
                   pkg, "/master/DESCRIPTION")
@@ -80,6 +80,7 @@ ui <- fluidPage(
       br(),br(),
       fileInput("descFile", "Or upload a DESCRIPTION file"), 
       actionButton("checkFile", "Check DESCRIPTION file"),
+      br(),br(),
       checkboxGroupInput("depTypes", "Dependency Types", 
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
                          selected = c("Depends", "Imports", "Suggests"))
