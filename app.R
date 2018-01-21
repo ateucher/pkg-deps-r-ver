@@ -18,15 +18,14 @@ get_dep_r_versions <- function(desc = NULL, dep_types = c("Depends", "Imports", 
   
   map_dfr(descs, pkg_rver) %>%
     left_join(deps, by = "package") %>%
-    select(package, cran_ver, type, r_version, everything()) %>%
+    select(package, cran_ver, you_req = version, type, r_version, everything()) %>%
     arrange(desc(r_major), desc(r_minor), desc(r_patch))
 }
 
 get_deps <- function(desc, dep_types = c("Depends", "Imports", "Suggests", "Enhances")) {
   dep_types <- match.arg(dep_types, several.ok = TRUE)
   desc::desc_get_deps(desc) %>% 
-    filter(type %in% dep_types, package != "R") %>% 
-    select(-version)
+    filter(type %in% dep_types, package != "R")
 }
 
 get_desc_file <- function(pkg) {
@@ -78,7 +77,7 @@ make_ver <- function(x) {
 
 ui <- fluidPage(
   
-  titlePanel("Find an appropriate version of dependencies for your package"),
+  titlePanel("Find appropriate versions of dependencies for your package"),
   
   sidebarLayout(
     sidebarPanel(
@@ -104,12 +103,12 @@ ui <- fluidPage(
       h3(htmlOutput("pkgname")),
       DT::dataTableOutput("pkgdeps", width = "95%"),
       p("This table lists the packages listed as dependencies by the selected package, 
-        their current version on CRAN, and the minimum version of R required by 
-        each of those dependencies."), 
+        their current version on CRAN, the version required by the selected package, 
+        and the minimum version of R required by each of those dependencies."), 
       p("This is meant to help you choose a reasonable minimum version of R and other 
         dependencies for your package. Unless you have a good reason to, your package 
         shouldn't depend on a version of R higher than the highest version required 
-        by your package's dependencies (i.e., the highest R version in this table)."),
+        by your package's dependencies."),
       p("*Note that only dependencies on CRAN are checked")
     )
   )
@@ -145,7 +144,7 @@ server <- function(input, output, session) {
   output$pkgdeps <- DT::renderDataTable({
     req(rv$desc)
     tbl()
-  }, colnames = c("Package", "Version on CRAN", "Dependency Type", "R Version", 
+  }, colnames = c("Package", "Version on CRAN", "Required Version", "Dependency Type", "R Version", 
                   "R Major", "R Minor", "R Patch"))
   
   output$verComp <- renderText({
@@ -162,7 +161,7 @@ server <- function(input, output, session) {
       c("the same", "as")
     }
     
-    paste("Your package requires", diff[1], "version", diff[2], 
+    paste("Your package requires", diff[1], "R version", diff[2], 
           "the newest version of R required by your dependencies.",
           ifelse(diff[2] == "as", "<em>Nice work!</em></br>", 
                  "</br><em>You may consider changing your required R version</em></br>"),
