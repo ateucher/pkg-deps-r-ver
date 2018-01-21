@@ -135,7 +135,7 @@ server <- function(input, output, session) {
     pkg <- desc_get("Package", rv$desc)
     pkg_ver <- desc_get_version(rv$desc)
     paste0("Dependencies* for <em>", pkg, " v", pkg_ver, 
-           "</em>, and minimum R version specied by those dependencies")
+           "</em>, and minimum R version required by those dependencies")
   })
   
   tbl <- reactive(get_dep_r_versions(desc = rv$desc,
