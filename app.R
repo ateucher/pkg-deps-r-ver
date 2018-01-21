@@ -14,7 +14,9 @@ get_dep_r_versions <- function(desc = NULL, dep_types = c("Depends", "Imports", 
                       r_major = integer(0), r_minor = integer(0), r_patch = integer(0)))
   }
   
-  map_dfr(deps$package, pkg_rver) %>%
+  descs <- map(deps$package, get_desc_file)
+  
+  map_dfr(descs, pkg_rver) %>%
     left_join(deps, by = "package") %>%
     select(package, cran_ver, type, r_version, everything()) %>%
     arrange(desc(r_major), desc(r_minor), desc(r_patch))
@@ -31,13 +33,13 @@ get_desc_file <- function(pkg) {
   # desc_file <- system.file("DESCRIPTION", package = pkg)
   # 
   # if (!file.exists(desc_file)) {
-    # message("No DESCRIPTION file locally for ", pkg,
-    #         ".\n Attempting to get from https://github.com/cran/", pkg)
-    desc_file <- tempfile()
-    url <- paste0("https://raw.githubusercontent.com/cran/", 
-                  pkg, "/master/DESCRIPTION")
-    res <- GET(url, write_disk(desc_file, overwrite = TRUE))
-    if (res$status_code > 200) return(NULL)
+  # message("No DESCRIPTION file locally for ", pkg,
+  #         ".\n Attempting to get from https://github.com/cran/", pkg)
+  desc_file <- tempfile()
+  url <- paste0("https://raw.githubusercontent.com/cran/", 
+                pkg, "/master/DESCRIPTION")
+  res <- GET(url, write_disk(desc_file, overwrite = TRUE))
+  if (res$status_code > 200) return(NULL)
   # }
   desc_file
 }
@@ -48,11 +50,10 @@ parse_rver <- function(x) {
   unclass(as.package_version(just_ver))[[1]]
 }
 
-pkg_rver <- function(pkg) {
-  desc_file <- get_desc_file(pkg)
+pkg_rver <- function(desc_file) {
   if (is.null(desc_file)) return(NULL)
   
-  pkg_ver <- desc::desc_get("Version", desc_file)
+  pkg_ver <- as.character(desc::desc_get_version(desc_file))
   
   deps <- desc::desc_get_deps(desc_file)
   if (is.null(deps)) {
@@ -66,8 +67,13 @@ pkg_rver <- function(pkg) {
   }  else {
     R_ver <- parse_rver(R_ver_txt)
   }
-  list(package = pkg, cran_ver = pkg_ver, r_version = R_ver_txt, 
+  list(package = desc_get("Package", desc_file), cran_ver = pkg_ver, r_version = R_ver_txt, 
        r_major = R_ver[1], r_minor = R_ver[2], r_patch = R_ver[3])
+}
+
+make_ver <- function(x) {
+  all_vers <- paste(x$r_major, x$r_minor, x$r_patch, sep = ".")
+  package_version(gsub("NA", "0", all_vers))
 }
 
 ui <- fluidPage(
@@ -83,7 +89,7 @@ ui <- fluidPage(
       fileInput("descFile", "Or upload a DESCRIPTION file"), 
       actionButton("checkFile", "Check DESCRIPTION file"),
       hr(),
-      checkboxGroupInput("depTypes", "Select dependency types:", 
+      checkboxGroupInput("depTypes", "Select dependency types to include:", 
                          choices = c("Depends", "Imports", "Suggests", "Enhances", "LinkingTo"), 
                          selected = c("Depends", "Imports", "Suggests")),
       hr(),
@@ -93,9 +99,10 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      h3(htmlOutput("pkgname")),
-      dataTableOutput("pkgdeps", width = "95%"),
+      h4(htmlOutput("verComp")),
       hr(),
+      h3(htmlOutput("pkgname")),
+      DT::dataTableOutput("pkgdeps", width = "95%"),
       p("This table lists the packages listed as dependencies by the selected package, 
         their current version on CRAN, and the minimum version of R required by 
         each of those dependencies."), 
@@ -127,16 +134,41 @@ server <- function(input, output, session) {
   output$pkgname <- renderText({
     req(rv$desc)
     pkg <- desc_get("Package", rv$desc)
-    pkg_ver <- desc_get("Version", rv$desc)
-    paste0("Dependencies* for <em>", pkg, " v", pkg_ver, "</em>, and minimum R version specied by those dependencies")
+    pkg_ver <- desc_get_version(rv$desc)
+    paste0("Dependencies* for <em>", pkg, " v", pkg_ver, 
+           "</em>, and minimum R version specied by those dependencies")
   })
   
-  output$pkgdeps <- renderDataTable({
+  tbl <- reactive(get_dep_r_versions(desc = rv$desc,
+                            dep_types = input$depTypes))
+  
+  output$pkgdeps <- DT::renderDataTable({
     req(rv$desc)
-    get_dep_r_versions(desc = rv$desc,
-                       dep_types = input$depTypes)
+    tbl()
   }, colnames = c("Package", "Version on CRAN", "Dependency Type", "R Version", 
                   "R Major", "R Minor", "R Patch"))
+  
+  output$verComp <- renderText({
+    req(rv$desc)
+    
+    max_rver <- max(make_ver(tbl()), na.rm = TRUE)
+    curr_ver <- make_ver(pkg_rver(rv$desc))
+
+    diff <- if (curr_ver > max_rver) {
+      c("a newer", "than")
+    } else if (curr_ver < max_rver) {
+      c("an older", "than")
+    } else {
+      c("the same", "as")
+    }
+    
+    paste("Your package requires", diff[1], "version", diff[2], 
+          "the newest version of R required by your dependencies.",
+          ifelse(diff[2] == "as", "<em>Nice work!</em></br>", 
+                 "</br><em>You may consider changing your required R version</em></br>"),
+          "</br>The R version required by your package is:", curr_ver, "</br>", 
+          "The newest R version required by your dependencies is: ", max_rver)
+  })
 }
 
 # Run the application 
