@@ -78,6 +78,15 @@ make_ver <- function(x) {
 ui <- fluidPage(
   
   titlePanel("Find appropriate versions of dependencies for your package"),
+  p("This app is meant to help you choose a reasonable minimum version of 
+    dependencies for your package by showing you the current CRAN version 
+    of each dependency, and the R version that each depends on. It's not 
+    necessary to require a minimum R version in your package, and you probably 
+    shouldn't unless you are required to by ", code("R CMD check"), " or you
+    have explicitly verified that your package works on versions of R back to 
+    a particular version. There is a discussion of this issue ", 
+    a("on the RStudio Community forum.", 
+      href = "https://community.rstudio.com/t/determining-which-version-of-r-to-depend-on/4396/10")),
   
   sidebarLayout(
     sidebarPanel(
@@ -105,10 +114,6 @@ ui <- fluidPage(
       p("This table lists the packages listed as dependencies by the selected package, 
         their current version on CRAN, the version required by the selected package, 
         and the minimum version of R required by each of those dependencies."), 
-      p("This is meant to help you choose a reasonable minimum version of R and other 
-        dependencies for your package. Unless you have a good reason to, your package 
-        shouldn't depend on a version of R higher than the highest version required 
-        by your package's dependencies."),
       p("*Note that only dependencies on CRAN are checked")
     )
   )
@@ -161,12 +166,10 @@ server <- function(input, output, session) {
       c("the same", "as")
     }
     
-    paste("Your package requires", diff[1], "R version", diff[2], 
-          "the newest version of R required by your dependencies.",
-          ifelse(diff[2] == "as", "<em>Nice work!</em></br>", 
-                 "</br><em>You may consider changing your required R version</em></br>"),
-          "</br>The R version required by your package is:", curr_ver, "</br>", 
-          "The newest R version required by your dependencies is: ", max_rver)
+    paste("The R version required by your package is:", curr_ver, "</br>", 
+          "The newest R version required by your dependencies is: ", max_rver, 
+          "</br>Your package requires", diff[1], "R version", diff[2], 
+          "the newest version of R required by your dependencies.")
   })
 }
 
