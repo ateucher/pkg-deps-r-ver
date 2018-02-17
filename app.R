@@ -84,9 +84,9 @@ ui <- fluidPage(
     necessary to require a minimum R version in your package, and you probably 
     shouldn't unless you are required to by ", code("R CMD check"), " or you
     have explicitly verified that your package works on versions of R back to 
-    a particular version. There is a discussion of this issue ", 
-    a("on the RStudio Community forum.", 
-      href = "https://community.rstudio.com/t/determining-which-version-of-r-to-depend-on/4396/10")),
+    a particular version (new advice from Hadley Wickham). There is a discussion 
+    of this issue ", a("on the RStudio Community forum.", 
+    href = "https://community.rstudio.com/t/determining-which-version-of-r-to-depend-on/4396/10")),
   
   sidebarLayout(
     sidebarPanel(
